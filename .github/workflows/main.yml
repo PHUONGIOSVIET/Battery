@@ -19,15 +19,25 @@ jobs:
       - name: Setup Theos
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev socat
-          # Tăng buffer để tránh lỗi 128
-          git config --global http.postBuffer 524288000
-          git config --global http.lowSpeedLimit 0
-          git config --global http.lowSpeedTime 999999
+          sudo apt-get install -y libssl-dev socat unzip
           export THEOS=$HOME/theos
           echo "THEOS=$THEOS" >> $GITHUB_ENV
-          git clone --recursive https://github.com/theos/theos.git $THEOS
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
+          
+          # Tải Theos bằng file ZIP để tránh lỗi Git 128
+          curl -L https://github.com/theos/theos/archive/master.zip -o theos.zip
+          unzip theos.zip
+          mv theos-master $THEOS
+          
+          # Tải SDK (Dùng ZIP cho chắc chắn)
+          curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
+          unzip sdks.zip
+          mkdir -p $THEOS/sdks
+          mv sdks-master/* $THEOS/sdks/
+          
+          # Cài đặt các công cụ bổ sung cần thiết
+          cd $THEOS
+          git config --global http.postBuffer 524288000
+          git submodule update --init --recursive || true
           
       - name: Build Package
         run: |
