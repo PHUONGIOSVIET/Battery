@@ -64,7 +64,11 @@ jobs:
           touch $THEOS/vendor/logos/.git
           
           echo "=== Vendor setup complete ==="
-          ls $THEOS/vendor/
+          
+          # Tải iOS Toolchain cho Linux
+          curl -L https://github.com/sbingner/llvm-project/releases/latest/download/linux-ios-arm64e-clang-toolchain.tar.lzma -o toolchain.tar.lzma
+          tar -xf toolchain.tar.lzma -C $THEOS/toolchain
+          ls $THEOS/toolchain/linux/iphone/bin/ | head -5
           
       - name: Build Package
         run: |
