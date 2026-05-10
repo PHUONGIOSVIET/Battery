@@ -28,18 +28,28 @@ jobs:
           unzip -q theos.zip
           mv theos-master $THEOS
           
-          # Tải tất cả vendor submodules (dạng ZIP)
+          # Xóa sạch thư mục vendor cũ (chứa symlink rỗng)
+          rm -rf $THEOS/vendor/dm.pl
+          rm -rf $THEOS/vendor/include
+          rm -rf $THEOS/vendor/lib
+          rm -rf $THEOS/vendor/logos
+          
+          # Tải vendor submodules
           curl -L https://github.com/theos/dm.pl/archive/master.zip -o dm.zip
-          unzip -q dm.zip && rm -rf $THEOS/vendor/dm.pl && mv dm.pl-master $THEOS/vendor/dm.pl
+          unzip -q dm.zip
+          mv dm.pl-master $THEOS/vendor/dm.pl
           
           curl -L https://github.com/theos/headers/archive/master.zip -o headers.zip
-          unzip -q headers.zip && rm -rf $THEOS/vendor/include && mv headers-master $THEOS/vendor/include
+          unzip -q headers.zip
+          mv headers-master $THEOS/vendor/include
           
           curl -L https://github.com/theos/lib/archive/master.zip -o lib.zip
-          unzip -q lib.zip && rm -rf $THEOS/vendor/lib && mv lib-master $THEOS/vendor/lib
+          unzip -q lib.zip
+          mv lib-master $THEOS/vendor/lib
           
           curl -L https://github.com/theos/logos/archive/master.zip -o logos.zip
-          unzip -q logos.zip && rm -rf $THEOS/vendor/logos && mv logos-master $THEOS/vendor/logos
+          unzip -q logos.zip
+          mv logos-master $THEOS/vendor/logos
           
           # Tải SDK
           curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
@@ -47,8 +57,12 @@ jobs:
           mkdir -p $THEOS/sdks
           mv sdks-master/* $THEOS/sdks/
           
-          # Kiểm tra dm.pl đã có chưa
-          ls -la $THEOS/vendor/dm.pl/
+          # Kiểm tra mọi thứ đã đúng chưa
+          echo "=== Checking vendor ==="
+          ls $THEOS/vendor/
+          ls $THEOS/vendor/include/ | head -5
+          ls $THEOS/vendor/lib/ | head -5
+          ls $THEOS/vendor/dm.pl/
           
       - name: Build Package
         run: |
