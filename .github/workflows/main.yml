@@ -1,0 +1,42 @@
+name: Build Battery IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev socat
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
+          
+      - name: Build Package
+        run: |
+          make package FINALPACKAGE=1
+          
+      - name: Convert DEB to IPA
+        run: |
+          mkdir -p Payload
+          ar x packages/*.deb
+          tar -xf data.tar.lzma
+          cp -r Applications/*.app Payload/
+          zip -r BatteryPro.ipa Payload
+          
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BatteryPro-IPA
+          path: BatteryPro.ipa

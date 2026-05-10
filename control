@@ -1,0 +1,9 @@
+Package: com.phuongios.batterypro
+Name: BatteryPro
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Ứng dụng xem thông số pin chuyên sâu cho iPhone
+Maintainer: PhuongIOS
+Author: PhuongIOS
+Section: Applications
