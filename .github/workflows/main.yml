@@ -20,7 +20,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libssl-dev socat
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          # Tăng buffer để tránh lỗi 128
+          git config --global http.postBuffer 524288000
+          git config --global http.lowSpeedLimit 0
+          git config --global http.lowSpeedTime 999999
+          export THEOS=$HOME/theos
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          git clone --recursive https://github.com/theos/theos.git $THEOS
           git clone --depth 1 https://github.com/theos/sdks.git $THEOS/sdks
           
       - name: Build Package
