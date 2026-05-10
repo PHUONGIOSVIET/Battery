@@ -10,6 +10,23 @@
     <string>BatteryPro</string>
     <key>CFBundleIdentifier</key>
     <string>com.phuongios.batterypro</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Text Document</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.plain-text</string>
+                <string>public.text</string>
+                <string>public.data</string>
+            </array>
+        </dict>
+    </array>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
     <key>CFBundleIcons</key>
     <dict>
         <key>CFBundlePrimaryIcon</key>

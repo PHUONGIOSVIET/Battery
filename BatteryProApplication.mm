@@ -15,4 +15,12 @@
     [_window makeKeyAndVisible];
 }
 
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+    if (url) {
+        [_viewController handleSharedFile:url];
+        return YES;
+    }
+    return NO;
+}
+
 @end

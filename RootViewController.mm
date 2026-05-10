@@ -15,11 +15,14 @@ extern "C" {
     kern_return_t IOObjectRelease(io_object_t);
 }
 
-@interface RootViewController () <UITableViewDelegate, UITableViewDataSource>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+
+@interface RootViewController () <UITableViewDelegate, UITableViewDataSource, UIDocumentPickerDelegate>
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) NSMutableArray *sections;
 @property (nonatomic, strong) NSMutableArray *sectionTitles;
 @property (nonatomic, strong) NSTimer *refreshTimer;
+@property (nonatomic, strong) NSDictionary *analyticsData;
 @end
 
 @implementation RootViewController
@@ -35,6 +38,14 @@ extern "C" {
     titleLabel.font = [UIFont boldSystemFontOfSize:20];
     [self.view addSubview:titleLabel];
     
+    // File Picker Button
+    UIButton *fileBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    fileBtn.frame = CGRectMake(self.view.frame.size.width - 90, 50, 80, 40);
+    [fileBtn setTitle:@"Chọn file" forState:UIControlStateNormal];
+    fileBtn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    [fileBtn addTarget:self action:@selector(openFilePicker) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:fileBtn];
+    
     // TableView
     CGFloat topOffset = 95;
     self.tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, topOffset, self.view.frame.size.width, self.view.frame.size.height - topOffset) style:UITableViewStyleInsetGrouped];
@@ -48,6 +59,66 @@ extern "C" {
     
     // Auto refresh mỗi 3 giây
     self.refreshTimer = [NSTimer scheduledTimerWithTimeInterval:3.0 target:self selector:@selector(refreshData) userInfo:nil repeats:YES];
+}
+
+- (void)openFilePicker {
+    if (@available(iOS 14.0, *)) {
+        UTType *type = [UTType typeWithIdentifier:@"public.data"];
+        UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[type] asCopy:YES];
+        picker.delegate = self;
+        [self presentViewController:picker animated:YES completion:nil];
+    }
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
+    NSURL *url = urls.firstObject;
+    if (url) {
+        [self handleSharedFile:url];
+    }
+}
+
+- (void)handleSharedFile:(NSURL *)url {
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    NSString *content = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if (content) {
+        [self parseBatteryData:content];
+    } else {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Lỗi" message:@"Không thể đọc file" preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+    }
+}
+
+- (void)parseBatteryData:(NSString *)text {
+    NSInteger cycles = [self extractNumber:text pattern:@"last_value_CycleCount\":(\\d+)"];
+    NSInteger design = [self extractNumber:text pattern:@"last_value_NominalChargeCapacity\":(\\d+)"];
+    NSInteger current = [self extractNumber:text pattern:@"last_value_AppleRawMaxCapacity\":(\\d+)"];
+    
+    if (design > 0 && current > 0) {
+        NSInteger health = (current * 100) / design;
+        if (health > 100) health = 100;
+        self.analyticsData = @{
+            @"health": @(health),
+            @"cycles": @(cycles),
+            @"current": @(current),
+            @"design": @(design)
+        };
+    } else {
+        self.analyticsData = nil;
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Lỗi" message:@"Không tìm thấy dữ liệu pin trong file" preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:alert animated:YES completion:nil];
+    }
+    [self refreshData];
+}
+
+- (NSInteger)extractNumber:(NSString *)text pattern:(NSString *)pattern {
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, text.length)];
+    if (match && match.numberOfRanges > 1) {
+        return [[text substringWithRange:[match rangeAtIndex:1]] integerValue];
+    }
+    return 0;
 }
 
 - (void)dealloc {
@@ -152,6 +223,17 @@ extern "C" {
     NSString *deviceInfo = [NSString stringWithFormat:@"%@ %@ (iOS %@)", [self deviceModelName], [self storageString], [[UIDevice currentDevice] systemVersion]];
     NSString *uptimeInfo = [NSString stringWithFormat:@"Thời gian hoạt động: %@", [self uptimeString]];
     [self.sections addObject:@[@[@"📱", deviceInfo], @[@"⏱️", uptimeInfo]]];
+    
+    // ===== SECTION ANALYTICS (TỪ FILE) =====
+    if (self.analyticsData) {
+        [self.sectionTitles addObject:@"DỮ LIỆU TỪ FILE ANALYTICS"];
+        NSMutableArray *analyticsSection = [NSMutableArray array];
+        [analyticsSection addObject:@[@"🔋", [NSString stringWithFormat:@"Độ chai pin thực tế: %@%%", self.analyticsData[@"health"]]]];
+        [analyticsSection addObject:@[@"🔄", [NSString stringWithFormat:@"Số chu kỳ sạc: %@", self.analyticsData[@"cycles"]]]];
+        [analyticsSection addObject:@[@"📈", [NSString stringWithFormat:@"Dung lượng thực tế: %@ mAh", self.analyticsData[@"current"]]]];
+        [analyticsSection addObject:@[@"📐", [NSString stringWithFormat:@"Dung lượng thiết kế: %@ mAh", self.analyticsData[@"design"]]]];
+        [self.sections addObject:analyticsSection];
+    }
     
     // ===== SECTION 1: Thông tin pin =====
     [self.sectionTitles addObject:@"THÔNG TIN PIN"];
