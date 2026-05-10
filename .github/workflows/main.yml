@@ -19,6 +19,8 @@ jobs:
       - name: Setup Theos (Full - ZIP method)
         run: |
           set -e
+          # Cài ldid (công cụ ký code iOS)
+          brew install ldid
           export THEOS=$HOME/theos
           echo "THEOS=$THEOS" >> $GITHUB_ENV
           
