@@ -19,25 +19,36 @@ jobs:
       - name: Setup Theos
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev socat unzip
+          sudo apt-get install -y libssl-dev socat unzip fakeroot
           export THEOS=$HOME/theos
           echo "THEOS=$THEOS" >> $GITHUB_ENV
           
-          # Tải Theos bằng file ZIP để tránh lỗi Git 128
+          # Tải Theos chính
           curl -L https://github.com/theos/theos/archive/master.zip -o theos.zip
-          unzip theos.zip
+          unzip -q theos.zip
           mv theos-master $THEOS
           
-          # Tải SDK (Dùng ZIP cho chắc chắn)
+          # Tải tất cả vendor submodules (dạng ZIP)
+          curl -L https://github.com/theos/dm.pl/archive/master.zip -o dm.zip
+          unzip -q dm.zip && rm -rf $THEOS/vendor/dm.pl && mv dm.pl-master $THEOS/vendor/dm.pl
+          
+          curl -L https://github.com/theos/headers/archive/master.zip -o headers.zip
+          unzip -q headers.zip && rm -rf $THEOS/vendor/include && mv headers-master $THEOS/vendor/include
+          
+          curl -L https://github.com/theos/lib/archive/master.zip -o lib.zip
+          unzip -q lib.zip && rm -rf $THEOS/vendor/lib && mv lib-master $THEOS/vendor/lib
+          
+          curl -L https://github.com/theos/logos/archive/master.zip -o logos.zip
+          unzip -q logos.zip && rm -rf $THEOS/vendor/logos && mv logos-master $THEOS/vendor/logos
+          
+          # Tải SDK
           curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
-          unzip sdks.zip
+          unzip -q sdks.zip
           mkdir -p $THEOS/sdks
           mv sdks-master/* $THEOS/sdks/
           
-          # Cài đặt các công cụ bổ sung cần thiết
-          cd $THEOS
-          git config --global http.postBuffer 524288000
-          git submodule update --init --recursive || true
+          # Kiểm tra dm.pl đã có chưa
+          ls -la $THEOS/vendor/dm.pl/
           
       - name: Build Package
         run: |
