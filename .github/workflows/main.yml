@@ -86,13 +86,35 @@ jobs:
           DEB=$(ls packages/*.deb)
           echo "Found: $DEB"
           ar x "$DEB"
-          # Thử giải nén với các định dạng có thể
           if [ -f data.tar.lzma ]; then tar -xf data.tar.lzma; fi
           if [ -f data.tar.xz ]; then tar -xf data.tar.xz; fi
           if [ -f data.tar.gz ]; then tar -xzf data.tar.gz; fi
           if [ -f data.tar.bz2 ]; then tar -xjf data.tar.bz2; fi
           if [ -f data.tar.zst ]; then zstd -d data.tar.zst -o data.tar && tar -xf data.tar; fi
           cp -r Applications/*.app Payload/
+          
+          # Kiểm tra Info.plist
+          APP_DIR=$(ls -d Payload/*.app)
+          echo "App: $APP_DIR"
+          echo "Contents:"
+          ls -la "$APP_DIR/"
+          
+          # Thêm entitlements cho ESign/TrollStore
+          cat > /tmp/ent.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>platform-application</key>
+            <true/>
+            <key>get-task-allow</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+          BINARY="$APP_DIR/BatteryPro"
+          ldid -S/tmp/ent.plist "$BINARY" || codesign -f -s - --entitlements /tmp/ent.plist "$BINARY" || true
+          
           zip -r BatteryPro.ipa Payload
           echo "✅ IPA created: $(ls -lh BatteryPro.ipa)"
 
