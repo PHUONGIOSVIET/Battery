@@ -9,5 +9,6 @@ BatteryPro_FRAMEWORKS := UIKit CoreGraphics
 BatteryPro_PRIVATE_FRAMEWORKS := IOKit
 BatteryPro_CODESIGN_FLAGS := -S
 BatteryPro_INSTALL_PATH := /Applications
+BatteryPro_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/application.mk
