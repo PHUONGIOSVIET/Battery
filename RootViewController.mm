@@ -7,11 +7,13 @@
 // IOKit declarations (Private API)
 typedef mach_port_t io_service_t;
 typedef mach_port_t io_object_t;
-extern const mach_port_t kIOMasterPortDefault;
-io_service_t IOServiceGetMatchingService(mach_port_t, CFDictionaryRef);
-CFMutableDictionaryRef IOServiceMatching(const char *);
-CFTypeRef IORegistryEntryCreateCFProperty(io_service_t, CFStringRef, CFAllocatorRef, uint32_t);
-kern_return_t IOObjectRelease(io_object_t);
+extern "C" {
+    extern const mach_port_t kIOMasterPortDefault;
+    io_service_t IOServiceGetMatchingService(mach_port_t, CFDictionaryRef);
+    CFMutableDictionaryRef IOServiceMatching(const char *);
+    CFTypeRef IORegistryEntryCreateCFProperty(io_service_t, CFStringRef, CFAllocatorRef, uint32_t);
+    kern_return_t IOObjectRelease(io_object_t);
+}
 
 @interface RootViewController () <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) UITableView *tableView;
