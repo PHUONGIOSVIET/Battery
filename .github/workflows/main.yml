@@ -10,79 +10,91 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Theos
+      - name: Setup Theos (Full - ZIP method)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev socat unzip fakeroot
+          set -e
           export THEOS=$HOME/theos
           echo "THEOS=$THEOS" >> $GITHUB_ENV
           
-          # Tải Theos chính
-          curl -L https://github.com/theos/theos/archive/master.zip -o theos.zip
-          unzip -q theos.zip
-          mv theos-master $THEOS
+          # ====== 1. Tải Theos chính ======
+          curl -L https://github.com/theos/theos/archive/master.zip -o /tmp/theos.zip
+          unzip -q /tmp/theos.zip -d /tmp
+          mv /tmp/theos-master $THEOS
           
-          # Xóa sạch thư mục vendor cũ (chứa symlink rỗng)
+          # ====== 2. Xóa sạch các symlink rỗng trong vendor ======
           rm -rf $THEOS/vendor/dm.pl
           rm -rf $THEOS/vendor/include
           rm -rf $THEOS/vendor/lib
           rm -rf $THEOS/vendor/logos
           
-          # Tải vendor submodules
-          curl -L https://github.com/theos/dm.pl/archive/master.zip -o dm.zip
-          unzip -q dm.zip
-          mv dm.pl-master $THEOS/vendor/dm.pl
+          # ====== 3. Tải TẤT CẢ vendor submodules ======
+          # dm.pl (đóng gói .deb)
+          curl -L https://github.com/theos/dm.pl/archive/master.zip -o /tmp/dm.zip
+          unzip -q /tmp/dm.zip -d /tmp
+          mv /tmp/dm.pl-master $THEOS/vendor/dm.pl
           
-          curl -L https://github.com/theos/headers/archive/master.zip -o headers.zip
-          unzip -q headers.zip
-          mv headers-master $THEOS/vendor/include
+          # headers (file header iOS)
+          curl -L https://github.com/theos/headers/archive/master.zip -o /tmp/headers.zip
+          unzip -q /tmp/headers.zip -d /tmp
+          mv /tmp/headers-master $THEOS/vendor/include
           
-          curl -L https://github.com/theos/lib/archive/master.zip -o lib.zip
-          unzip -q lib.zip
-          mv lib-master $THEOS/vendor/lib
+          # lib (thư viện hỗ trợ)
+          curl -L https://github.com/theos/lib/archive/master.zip -o /tmp/lib.zip
+          unzip -q /tmp/lib.zip -d /tmp
+          mv /tmp/lib-master $THEOS/vendor/lib
           
-          curl -L https://github.com/theos/logos/archive/master.zip -o logos.zip
-          unzip -q logos.zip
-          mv logos-master $THEOS/vendor/logos
+          # logos (bộ tiền xử lý)
+          curl -L https://github.com/theos/logos/archive/master.zip -o /tmp/logos.zip
+          unzip -q /tmp/logos.zip -d /tmp
+          mv /tmp/logos-master $THEOS/vendor/logos
           
-          # Tải SDK
-          curl -L https://github.com/theos/sdks/archive/master.zip -o sdks.zip
-          unzip -q sdks.zip
-          mkdir -p $THEOS/sdks
-          mv sdks-master/* $THEOS/sdks/
-          
-          # Tạo file .git giả (Theos kiểm tra sự tồn tại của file này)
+          # ====== 4. Tạo file .git giả (Theos kiểm tra file này) ======
           touch $THEOS/vendor/include/.git
           touch $THEOS/vendor/lib/.git
           touch $THEOS/vendor/dm.pl/.git
           touch $THEOS/vendor/logos/.git
           
-          echo "=== Vendor setup complete ==="
+          # ====== 5. Tải iOS SDK ======
+          curl -L https://github.com/theos/sdks/archive/master.zip -o /tmp/sdks.zip
+          unzip -q /tmp/sdks.zip -d /tmp
+          mkdir -p $THEOS/sdks
+          mv /tmp/sdks-master/* $THEOS/sdks/
           
-          # Tải iOS Toolchain cho Linux
-          curl -L https://github.com/sbingner/llvm-project/releases/latest/download/linux-ios-arm64e-clang-toolchain.tar.lzma -o toolchain.tar.lzma
-          tar -xf toolchain.tar.lzma -C $THEOS/toolchain
-          ls $THEOS/toolchain/linux/iphone/bin/ | head -5
-          
+          # ====== 6. Kiểm tra toàn bộ ======
+          echo "=== Theos: $(ls $THEOS/makefiles | wc -l) makefiles ==="
+          echo "=== Vendor: $(ls $THEOS/vendor/) ==="
+          echo "=== SDKs: $(ls $THEOS/sdks/) ==="
+          echo "=== Compiler: $(xcrun -f clang) ==="
+          echo "✅ Theos setup complete!"
+
       - name: Build Package
         run: |
           make package FINALPACKAGE=1
-          
-      - name: Convert DEB to IPA
+
+      - name: Create IPA from DEB
         run: |
+          set -e
           mkdir -p Payload
-          ar x packages/*.deb
-          tar -xf data.tar.lzma
+          DEB=$(ls packages/*.deb)
+          echo "Found: $DEB"
+          ar x "$DEB"
+          # Thử giải nén với các định dạng có thể
+          if [ -f data.tar.lzma ]; then tar -xf data.tar.lzma; fi
+          if [ -f data.tar.xz ]; then tar -xf data.tar.xz; fi
+          if [ -f data.tar.gz ]; then tar -xzf data.tar.gz; fi
+          if [ -f data.tar.bz2 ]; then tar -xjf data.tar.bz2; fi
+          if [ -f data.tar.zst ]; then zstd -d data.tar.zst -o data.tar && tar -xf data.tar; fi
           cp -r Applications/*.app Payload/
           zip -r BatteryPro.ipa Payload
-          
-      - name: Upload IPA Artifact
+          echo "✅ IPA created: $(ls -lh BatteryPro.ipa)"
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: BatteryPro-IPA
