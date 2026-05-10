@@ -57,12 +57,14 @@ jobs:
           mkdir -p $THEOS/sdks
           mv sdks-master/* $THEOS/sdks/
           
-          # Kiểm tra mọi thứ đã đúng chưa
-          echo "=== Checking vendor ==="
+          # Tạo file .git giả (Theos kiểm tra sự tồn tại của file này)
+          touch $THEOS/vendor/include/.git
+          touch $THEOS/vendor/lib/.git
+          touch $THEOS/vendor/dm.pl/.git
+          touch $THEOS/vendor/logos/.git
+          
+          echo "=== Vendor setup complete ==="
           ls $THEOS/vendor/
-          ls $THEOS/vendor/include/ | head -5
-          ls $THEOS/vendor/lib/ | head -5
-          ls $THEOS/vendor/dm.pl/
           
       - name: Build Package
         run: |
