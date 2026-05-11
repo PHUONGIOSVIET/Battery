@@ -1,0 +1,9 @@
+Package: com.phuongios.facebooknoseen
+Name: FacebookNoSeen
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: Chặn chức năng Seen Story trên ứng dụng Facebook.
+Maintainer: PhuongIOS
+Author: PhuongIOS
+Section: Tweaks

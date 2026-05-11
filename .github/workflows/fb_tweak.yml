@@ -1,0 +1,33 @@
+name: Build FacebookNoSeen Dylib
+
+on:
+  push:
+    paths:
+      - 'FacebookNoSeen/**'
+      - '.github/workflows/fb_tweak.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Dylib
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Install Theos
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"
+          echo "THEOS=~/theos" >> $GITHUB_ENV
+          
+      - name: Build Tweak
+        run: |
+          cd FacebookNoSeen
+          make package FINALPACKAGE=1
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FacebookNoSeen_Dylib
+          path: FacebookNoSeen/packages/*.deb
