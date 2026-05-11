@@ -18,6 +18,7 @@ jobs:
         
       - name: Install Theos
         run: |
+          brew install ldid
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"
           echo "THEOS=~/theos" >> $GITHUB_ENV
           
